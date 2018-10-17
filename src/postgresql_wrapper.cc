@@ -35,7 +35,7 @@ PostgreSQL_Result::PostgreSQL_Result(const PostgreSQL_Connection& conn, const ch
     : res(0), col_size_(0), col_size_set(false)
 {
   res = conn.exec(command);
-  if (PQresultStatus(res) != PGRES_TUPLES_OK)
+  if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK)
   {
     std::string error_code = PQresStatus(PQresultStatus(res));
     PQclear(res);
