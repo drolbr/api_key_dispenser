@@ -35,10 +35,10 @@ int main(int argc, char* args[])
   }
 
   auto cgi_args = decode_cgi_to_plain(cgi_post_to_text());
-  if (cgi_args["user"].empty() || cgi_args["oldkey"].empty())
+  if (cgi_args["user"].empty() || cgi_args["key"].empty())
   {
     std::cout<<"Status: 400 Bad Request\n\n"
-        "Parameters user and oldkey required.\n";
+        "Parameters user and key required.\n";
     return 0;
   }
 
@@ -46,11 +46,11 @@ int main(int argc, char* args[])
   {
     PostgreSQL_Connection conn;
     PostgreSQL_Result authenticate_result(conn,
-        ("select users.id, keys.service_ref "
+        ("select users.id "
             "from keys "
             "join users on users.id = keys.user_ref "
             "where users.name = '" + sanitize_text(cgi_args["user"]) + "' "
-                "and keys.data = '" + sanitize_text(cgi_args["oldkey"]) + "' "
+                "and keys.data = '" + sanitize_text(cgi_args["key"]) + "' "
                 "and keys.revoked_ref is null").c_str());
 
     if (authenticate_result.row_size() == 0)
@@ -66,36 +66,20 @@ int main(int argc, char* args[])
       return 0;
     }
 
-    std::string user_ref = authenticate_result.at(0, 0);
-    std::string service_ref = authenticate_result.at(0, 1);
-
-    std::string new_key = generate_random_key();
-
     PostgreSQL_Result key_event_res(conn,
         "insert into key_events (id, happened) "
             "select max(id)+1, now() from key_events "
             "returning id");
 
-    std::string created_ref = key_event_res.at(0, 0);
+    std::string revoked_ref = key_event_res.at(0, 0);
 
     PostgreSQL_Result res(conn,
-        ("insert into keys (created_ref, service_ref, user_ref, data) "
-            "values (" + created_ref + ", " + service_ref + ", " + user_ref + ", '" + new_key + "')").c_str());
+        ("update keys "
+            "set revoked_ref = " + revoked_ref + " "
+            "where data = '" + sanitize_text(cgi_args["key"]) + "'").c_str());
 
     std::cout<<"Status: 200 OK\n"
         "Content-type: text/plain\n\n";
-    std::cout<<new_key<<'\n';
-
-    /*for (int i = 0; i < res.col_size(); ++i)
-      std::cout<<'\t'<<res.col_name(i);
-    std::cout<<'\n';
-
-    for (int i = 0; i < res.row_size(); ++i)
-    {
-      for (int j = 0; j < res.col_size(); ++j)
-        std::cout<<'\t'<<res.at(i, j);
-      std::cout<<'\n';
-    }*/
   }
   catch (const PostgreSQL_Connection::Error& e)
   {

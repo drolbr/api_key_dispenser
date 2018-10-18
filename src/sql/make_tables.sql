@@ -30,7 +30,6 @@ create table keys (
     service_ref bigint,
     user_ref bigint,
     data varchar(40) unique,
-    expires timestamp,
     constraint fk_keys_created_ref foreign key (created_ref) references key_events (id),
     constraint fk_keys_revoked_ref foreign key (revoked_ref) references key_events (id),
     constraint fk_keys_user_ref foreign key (user_ref) references users (id),

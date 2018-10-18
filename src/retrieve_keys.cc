@@ -51,20 +51,20 @@ int main(int argc, char* args[])
         "<osm-apikeys>\n";
 
     std::string service_ref = authenticate_result.at(0, 0);
-    int64_t max_key_id = atoll(cgi_args["beyond"].c_str());
+    int64_t beyond_id = atoll(cgi_args["beyond"].c_str());
+    int64_t max_key_id = beyond_id;
 
     PostgreSQL_Result revoked_res(conn,
-        ("select keys.data, key_events.id "
+        ("select keys.data, keys.created_ref, keys.revoked_ref "
             "from keys "
-            "join key_events on keys.revoked_ref = key_events.id "
             "where keys.service_ref = " + service_ref + " "
-            "and key_events.id > " + sanitize_text(cgi_args["beyond"].c_str()) + " "
-            "and keys.created_ref <= " + sanitize_text(cgi_args["beyond"].c_str())).c_str());
+            "and keys.revoked_ref > " + sanitize_text(cgi_args["beyond"].c_str())).c_str());
 
     for (int i = 0; i < revoked_res.row_size(); ++i)
     {
-      std::cout<<"  <revoked key=\""<<revoked_res.at(i, 0)<<"\"/>\n";
-      max_key_id = std::max(max_key_id, (int64_t)atoll(revoked_res.at(i, 1)));
+      if ((int64_t)atoll(revoked_res.at(i, 1)) <= beyond_id)
+        std::cout<<"  <revoked key=\""<<revoked_res.at(i, 0)<<"\"/>\n";
+      max_key_id = std::max(max_key_id, (int64_t)atoll(revoked_res.at(i, 2)));
     }
 
     PostgreSQL_Result created_res(conn,
@@ -81,8 +81,7 @@ int main(int argc, char* args[])
     for (int i = 0; i < created_res.row_size(); ++i)
     {
       std::cout<<"  <apikey key=\""<<created_res.at(i, 0)<<"\""
-          " created=\""<<created_res.at(i, 1)<<"T"<<created_res.at(i, 2)<<"Z\""
-          " users=\"yes\"/>\n";
+          " created=\""<<created_res.at(i, 1)<<"T"<<created_res.at(i, 2)<<"Z\"/>\n";
       max_key_id = std::max(max_key_id, (int64_t)atoll(created_res.at(i, 3)));
     }
 
