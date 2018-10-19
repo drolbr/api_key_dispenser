@@ -4,7 +4,7 @@ create table users (
     );
 
 create table user_sessions (
-    user_ref bigint primary key,
+    user_ref bigint,
     access_key varchar(40),
     expires timestamp,
     constraint fk_us_user_ref foreign key (user_ref) references users (id)
