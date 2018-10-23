@@ -36,7 +36,7 @@ int main(int argc, char* args[])
     if (authenticate_result.row_size() == 0)
     {
       std::cout<<"Status: 403 Forbidden\n\n"
-          "No entry found for this user and key.\n";
+          "No entry found for this service and key.\n";
       return 0;
     }
     if (authenticate_result.row_size() > 1)
