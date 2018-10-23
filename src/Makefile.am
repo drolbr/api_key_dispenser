@@ -2,9 +2,13 @@
 AM_CXXFLAGS= -std=c++11
 
 cgibindir = ${prefix}/cgi-bin
-cgibin_PROGRAMS = cgi-bin/make_apikey cgi-bin/renew_apikey cgi-bin/revoke_apikey cgi-bin/retrieve_keys
+cgibin_PROGRAMS = cgi-bin/login_mapper cgi-bin/make_apikey cgi-bin/renew_apikey cgi-bin/revoke_apikey cgi-bin/retrieve_keys
 
-cgi_bin_make_apikey_SOURCES = cgi_helper.cc postgresql_wrapper.cc make_apikey.cc
+cgi_bin_login_mapper_SOURCES = cgi_helper.cc postgresql_wrapper.cc login_mapper.cc random_key.cc
+cgi_bin_login_mapper_CPPFLAGS = -I/usr/include/postgresql/ $(AM_CPPFLAGS)
+cgi_bin_login_mapper_LDADD = -lpq
+
+cgi_bin_make_apikey_SOURCES = cgi_helper.cc postgresql_wrapper.cc make_apikey.cc random_key.cc
 cgi_bin_make_apikey_CPPFLAGS = -I/usr/include/postgresql/ $(AM_CPPFLAGS)
 cgi_bin_make_apikey_LDADD = -lpq
 
