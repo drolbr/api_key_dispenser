@@ -84,7 +84,7 @@ int main(int argc, char* args[])
 
     PostgreSQL_Result insert_res(conn,
         ("insert into services (id, user_ref, uri, created, access_key) "
-            "select max(id)+1, " + uid + ", '" + sanitize_text(cgi_args["service"]) + "', "
+            "select coalesce(max(id), 0)+1, " + uid + ", '" + sanitize_text(cgi_args["service"]) + "', "
                 "now(), '" + new_key + "' from services").c_str());
 
     std::cout<<"Status: 201 Created\n"
@@ -98,6 +98,7 @@ int main(int argc, char* args[])
   }
   catch (const PostgreSQL_Result::Error& e)
   {
+    std::cout<<"Status: 502 DBMS has complained\n\n";
     std::cout<<"Error on SQL query: "<<e.what()<<'\n';
     return 0;
   }

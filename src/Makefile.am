@@ -8,11 +8,11 @@ cgi_bin_announce_service_SOURCES = cgi_helper.cc postgresql_wrapper.cc announce_
 cgi_bin_announce_service_CPPFLAGS = -I/usr/include/postgresql/ $(AM_CPPFLAGS)
 cgi_bin_announce_service_LDADD = -lpq
 
-cgi_bin_login_mapper_SOURCES = cgi_helper.cc postgresql_wrapper.cc login_mapper.cc random_key.cc
+cgi_bin_login_mapper_SOURCES = base64.cc cgi_helper.cc curl_client.cc postgresql_wrapper.cc login_mapper.cc osm_permissions_reader.cc random_key.cc
 cgi_bin_login_mapper_CPPFLAGS = -I/usr/include/postgresql/ $(AM_CPPFLAGS)
-cgi_bin_login_mapper_LDADD = -lpq
+cgi_bin_login_mapper_LDADD = -lpq -lcurl
 
-cgi_bin_login_service_SOURCES = cgi_helper.cc postgresql_wrapper.cc login_service.cc random_key.cc
+cgi_bin_login_service_SOURCES = base64.cc cgi_helper.cc curl_client.cc postgresql_wrapper.cc login_service.cc osm_permissions_reader.cc random_key.cc
 cgi_bin_login_service_CPPFLAGS = -I/usr/include/postgresql/ $(AM_CPPFLAGS)
 cgi_bin_login_service_LDADD = -lpq
 

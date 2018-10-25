@@ -54,7 +54,8 @@ int main(int argc, char* args[])
     PostgreSQL_Result service_result(conn,
         ("select id "
             "from services "
-            "where uri = '" + sanitize_text(cgi_args["service"]) + "' ").c_str());
+            "where uri = '" + sanitize_text(cgi_args["service"]) + "' "
+            "and access_key is not null").c_str());
 
     if (service_result.row_size() == 0)
     {
@@ -73,7 +74,7 @@ int main(int argc, char* args[])
 
     PostgreSQL_Result key_revoke_event_res(conn,
         "insert into key_events (id, happened) "
-            "select max(id)+1, now() from key_events "
+            "select coalesce(max(id), 0)+1, now() from key_events "
             "returning id");
 
     std::string revoke_event_ref = key_revoke_event_res.at(0, 0);
@@ -89,7 +90,7 @@ int main(int argc, char* args[])
 
     PostgreSQL_Result key_create_event_res(conn,
         "insert into key_events (id, happened) "
-            "select max(id)+1, now() from key_events "
+            "select coalesce(max(id), 0)+1, now() from key_events "
             "returning id");
 
     std::string created_ref = key_create_event_res.at(0, 0);

@@ -16,6 +16,7 @@ AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
 # Checks for libraries.
+AC_CHECK_LIB([curl], [curl_global_init])
 AC_CHECK_LIB([pq], [PQconnectdb])
 
 # Checks for header files.

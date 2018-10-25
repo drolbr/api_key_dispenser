@@ -8,7 +8,7 @@ createdb osm_apikey
 pushd $EXECDIR
 
 psql osm_apikey <make_tables.sql
-psql osm_apikey <make_testdata.sql
-psql osm_apikey <make_testsessions.sql
+#psql osm_apikey <make_testdata.sql
+#psql osm_apikey <make_testsessions.sql
 
 popd
