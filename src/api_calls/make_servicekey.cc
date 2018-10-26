@@ -1,6 +1,6 @@
-#include "cgi_helper.h"
-#include "postgresql_wrapper.h"
-#include "random_key.h"
+#include "../tools/cgi_helper.h"
+#include "../tools/postgresql_wrapper.h"
+#include "../tools/random_key.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -27,13 +27,6 @@ int main(int argc, char* args[])
 
   try
   {
-    if (sanitize_text(cgi_args["service"]) != cgi_args["service"])
-    {
-      std::cout<<"Status: 403 Forbidden\n\n"
-          "Service name contains illegal characters\n";
-      return 0;
-    }
-
     PostgreSQL_Connection conn;
     PostgreSQL_Result authenticate_result(conn,
         ("select id "
@@ -63,14 +56,10 @@ int main(int argc, char* args[])
             "from services "
             "where uri = '" + sanitize_text(cgi_args["service"]) + "' ").c_str());
 
-    if (service_result.row_size() == 1)
+    if (service_result.row_size() == 0)
     {
-      if (service_result.at(0, 1) == cgi_args["uid"])
-        std::cout<<"Status: 409 Conflict\n\n"
-            "The service "<<sanitize_text(cgi_args["service"])<<" already exists.\n";
-      else
-        std::cout<<"Status: 403 Forbidden\n\n"
-            "You are not the owner of "<<sanitize_text(cgi_args["service"])<<".\n";
+      std::cout<<"Status: 404 Service not found\n\n"
+          "No entry found for this service.\n";
       return 0;
     }
     if (service_result.row_size() > 1)
@@ -79,15 +68,23 @@ int main(int argc, char* args[])
           "Duplicate entry for service found.\n";
       return 0;
     }
+    if (service_result.at(0, 1) != cgi_args["uid"])
+    {
+      std::cout<<"Status: 403 Forbidden\n\n"
+          "You are not the owner of "<<sanitize_text(cgi_args["service"])<<".\n";
+      return 0;
+    }
+
+    std::string service_id = service_result.at(0, 0);
 
     std::string new_key = generate_random_key();
 
-    PostgreSQL_Result insert_res(conn,
-        ("insert into services (id, user_ref, uri, created, access_key) "
-            "select coalesce(max(id), 0)+1, " + uid + ", '" + sanitize_text(cgi_args["service"]) + "', "
-                "now(), '" + new_key + "' from services").c_str());
+    PostgreSQL_Result revoke_res(conn,
+        ("update services "
+            "set access_key = '" + new_key + "' "
+            "where id = " + service_id).c_str());
 
-    std::cout<<"Status: 201 Created\n"
+    std::cout<<"Status: 200 OK\n"
         "Content-type: text/plain\n\n";
     std::cout<<new_key<<'\n';
   }
@@ -98,7 +95,6 @@ int main(int argc, char* args[])
   }
   catch (const PostgreSQL_Result::Error& e)
   {
-    std::cout<<"Status: 502 DBMS has complained\n\n";
     std::cout<<"Error on SQL query: "<<e.what()<<'\n';
     return 0;
   }

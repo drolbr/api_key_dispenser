@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.61])
 AC_INIT([OSM_apikey_dispenser], [0.1], [roland@olbricht.nrw])
-AC_CONFIG_SRCDIR([postgresql_wrapper.h])
+AC_CONFIG_SRCDIR([tools/postgresql_wrapper.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])

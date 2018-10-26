@@ -1,5 +1,5 @@
-#include "cgi_helper.h"
-#include "postgresql_wrapper.h"
+#include "../tools/cgi_helper.h"
+#include "../tools/postgresql_wrapper.h"
 
 #include <cstdlib>
 #include <cstring>

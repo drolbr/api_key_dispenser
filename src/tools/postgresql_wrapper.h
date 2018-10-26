@@ -44,4 +44,5 @@ private:
   mutable bool col_size_set;
 };
 
+
 #endif

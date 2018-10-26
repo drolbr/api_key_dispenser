@@ -1,5 +1,6 @@
-#include "cgi_helper.h"
-#include "postgresql_wrapper.h"
+#include "../tools/cgi_helper.h"
+#include "../tools/postgresql_wrapper.h"
+#include "../tools/random_key.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -51,9 +52,10 @@ int main(int argc, char* args[])
     std::string uid = authenticate_result.at(0, 0);
 
     PostgreSQL_Result service_result(conn,
-        ("select id, user_ref "
+        ("select id "
             "from services "
-            "where uri = '" + sanitize_text(cgi_args["service"]) + "' ").c_str());
+            "where uri = '" + sanitize_text(cgi_args["service"]) + "' "
+            "and access_key is not null").c_str());
 
     if (service_result.row_size() == 0)
     {
@@ -67,23 +69,39 @@ int main(int argc, char* args[])
           "Duplicate entry for service found.\n";
       return 0;
     }
-    if (service_result.at(0, 1) != cgi_args["uid"])
-    {
-      std::cout<<"Status: 403 Forbidden\n\n"
-          "You are not the owner of "<<sanitize_text(cgi_args["service"])<<".\n";
-      return 0;
-    }
 
     std::string service_id = service_result.at(0, 0);
 
+    PostgreSQL_Result key_revoke_event_res(conn,
+        "insert into key_events (id, happened) "
+            "select coalesce(max(id), 0)+1, now() from key_events "
+            "returning id");
+
+    std::string revoke_event_ref = key_revoke_event_res.at(0, 0);
+
     PostgreSQL_Result revoke_res(conn,
-        ("update services "
-            "set access_key = null "
-            "where id = " + service_id).c_str());
+        ("update keys "
+            "set revoked_ref = " + revoke_event_ref + " "
+            "where user_ref = " + uid + " "
+            "and service_ref = " + service_id + " "
+            "and revoked_ref is null").c_str());
+
+    std::string new_key = generate_random_key();
+
+    PostgreSQL_Result key_create_event_res(conn,
+        "insert into key_events (id, happened) "
+            "select coalesce(max(id), 0)+1, now() from key_events "
+            "returning id");
+
+    std::string created_ref = key_create_event_res.at(0, 0);
+
+    PostgreSQL_Result insert_res(conn,
+        ("insert into keys (created_ref, service_ref, user_ref, data) "
+            "values (" + created_ref + ", " + service_id + ", " + uid + ", '" + new_key + "')").c_str());
 
     std::cout<<"Status: 200 OK\n"
         "Content-type: text/plain\n\n";
-    std::cout<<"Service will no longer be announced. The access_key is revoked."<<'\n';
+    std::cout<<new_key<<'\n';
   }
   catch (const PostgreSQL_Connection::Error& e)
   {

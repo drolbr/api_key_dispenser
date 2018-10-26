@@ -1,9 +1,9 @@
-#include "base64.h"
-#include "cgi_helper.h"
-#include "curl_client.h"
-#include "osm_permissions_reader.h"
-#include "postgresql_wrapper.h"
-#include "random_key.h"
+#include "../tools/base64.h"
+#include "../tools/cgi_helper.h"
+#include "../tools/curl_client.h"
+#include "../tools/osm_permissions_reader.h"
+#include "../tools/postgresql_wrapper.h"
+#include "../tools/random_key.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -80,39 +80,42 @@ int main(int argc, char* args[])
             "select " + user_uid.uid + ", '" + session_key + "', now() + interval '15 minutes'").c_str());
 
     PostgreSQL_Result services_result(conn,
-        "select uri "
+        ("select uri "
             "from services "
-            "where access_key is not null");
+            "where user_ref = " + user_uid.uid + " ").c_str());
 
     std::cout<<"Status: 200 OK\n"
         "Content-type: text/html; charset=utf8\n\n";
 
     std::cout<<
-"<html>\n"
-"<head>\n"
-"  <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" lang=\"en\"/>\n"
-"  <meta name=\"HandheldFriendly\" content=\"true\"/>\n"
-"  <title>OSM API key dispenser</title>\n"
-"  <script src=\"/login_mapper.js\"></script>\n"
-"</head>\n"
-"<body onload=\"init()\">\n"
-"  <p>Hello <strong>"<<user_uid.name<<"</strong></p>\n"
-"\n"
-"  <p><form action=\"#\" accept-charset=\"UTF-8\" method=\"post\">\n"
-"    <select size=\"1\" id=\"service_selection\">\n";
+"<html>"
+"<head>"
+"  <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" lang=\"en\"/>"
+"  <meta name=\"HandheldFriendly\" content=\"true\"/>"
+"  <title>OSM API key dispenser</title>"
+"  <script src=\"/login_service.js\"></script>"
+"</head>"
+"<body onload=\"init()\">"
+"  <p>Hello <strong>"<<user_uid.name<<"</strong></p>"
+""
+"  <p><form action=\"#\" accept-charset=\"UTF-8\" method=post\">"
+"    <select size=\"1\" id=\"service_selection\">";
     for (int i = 0; i < services_result.row_size(); ++i)
-      std::cout<<"      <option>"<<services_result.at(i, 0)<<"</option>\n";
+      std::cout<<"      <option>"<<services_result.at(i, 0)<<"</option>";
     std::cout<<
-"    </select><br/>\n"
-"    <input type=\"button\" value=\"Get key\" id=\"get_key_button\"/>\n"
-"    <input type=\"hidden\" id=\"uid\" value=\""<<user_uid.uid<<"\"/>\n"
-"    <input type=\"hidden\" id=\"session\" value=\""<<session_key<<"\"/>\n"
-"  </form></p>\n"
-"\n"
-"  <div id=\"show_keys_target\"/>\n"
-"\n"
-"</body>\n"
-"</html>\n";
+"    </select><br/>"
+"    <input type=\"button\" value=\"Reset Access Key\" id=\"reset_service_key\"/>"
+"    <input type=\"button\" value=\"Discontinue Service\" id=\"discontinue_service\"/><br/>"
+"    <input type=\"text\" value=\"URI of new sevice\" id=\"new_service_uri\"/><br/>"
+"    <input type=\"button\" value=\"Announce Service\" id=\"announce_service\"/><br/>"
+"    <input type=\"hidden\" id=\"uid\" value=\""<<user_uid.uid<<"\"/>"
+"    <input type=\"hidden\" id=\"session\" value=\""<<session_key<<"\"/>"
+"  </form></p>"
+""
+"  <div id=\"show_keys_target\"/>"
+""
+"</body>"
+"</html>";
 
   }
   catch (const PostgreSQL_Connection::Error& e)
